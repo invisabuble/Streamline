@@ -1,0 +1,40 @@
+<html>
+    <head>
+        <title>Streamline | Dashboard</title>
+        <link rel="stylesheet" href="css/Streamline.css">
+        <script src="js/Streamline.js"></script>
+    </head>
+
+    <body>
+
+        <header>
+            <logo>Streamline</logo>
+        </header>
+
+        <content>
+
+            <container id="select_devices">
+                <container_title class="default_font">Select Device</container_title>
+                <select id="device"></select>
+            </container>
+
+            <container id="media_list">
+                <container_title class="default_font">Library</container_title>
+                <ul id="file-list" class="default_font"></ul>
+                
+            </container>
+
+            <container>
+                <button>Play</button>
+                <button>Pause</button>
+            </container>
+
+        </content>
+
+    </body>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => Devices());
+        document.addEventListener("DOMContentLoaded", () => LoadLibrary());
+    </script>
+</html>

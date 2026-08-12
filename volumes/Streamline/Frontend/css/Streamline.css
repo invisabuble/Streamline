@@ -1,0 +1,53 @@
+:root {
+    --gap: 5px;
+    --page_width: 400px;
+}
+
+body {
+    width: var(--page_width);
+    background: #333;
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+}
+
+.default_font {
+    color: white;
+    font-family: arial;
+}
+
+header {
+    background: rgba(0,0,0,0.2);
+    padding: var(--gap);
+}
+
+logo {
+    color: white;
+    font-family: arial;
+    font-size: 50;
+}
+
+content {
+    display: flex;
+    flex-direction: column;
+    padding: var(--gap);
+    gap: var(--gap);
+}
+
+container {
+    background: rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: column;
+    padding: var(--gap);
+    border-radius: var(--gap);
+    gap: var(--gap);
+}
+
+::marker {
+    color: red;
+}
+
+li.highlighted {
+    background: rgba(255,255,255,0.1);
+}
