@@ -5,6 +5,8 @@ import urllib.request
 import urllib.parse
 import xml.etree.ElementTree as ET
 
+from .AVPlayer import AVPlayer
+
 class DiscoverAVs_Instance_Error (Exception) :
     def __init__ (self) :
         super().__init__("Only a single instance of DiscoverAVs should exist at once.")
@@ -166,14 +168,30 @@ class DiscoverAVs:
                     self._get_device_value(service, ns, "controlURL")
                 )
 
+                # Get the service type.
+                service_type = self._get_device_value(
+                    service,
+                    ns,
+                    "serviceType"
+                )
+
+                if "ConnectionManager" in service_type:
+                    connection_manager_url = control_url
+                    print(
+                        "ConnectionManager:",
+                        connection_manager_url
+                    )
+
                 # Build the dictionary of device information.
                 device_info = {info:self._get_device_value(device, ns, info) for info in self.required_device_info }
 
                 # Save the device in the devices dict.
                 self.devices[ip] = {
                     "control_url" : control_url,
+                    "service_type": service_type,
                     "device_info" : device_info,
-                    "last_seen" : time.time()
+                    "player"      : AVPlayer(service_type, control_url),
+                    "last_seen"   : time.time()
                     }
                 break
 

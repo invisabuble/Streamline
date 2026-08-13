@@ -17,13 +17,26 @@ class Streamline:
 
         self.media = self.library.list_files()
 
+        self.target_device = None
+
         self.host = host
         self.port = port
 
         self.app = web.Application()
+
         self.frontend = (
             Path(__file__).parent / "./Frontend"
         ).resolve()
+
+        self.app.router.add_get(
+            "/api/play",
+            self.play
+        )
+
+        self.app.router.add_get(
+            "/api/pause",
+            self.pause
+        )
 
         self.app.router.add_get(
             "/api/devices",
@@ -36,8 +49,14 @@ class Streamline:
         )
 
         self.app.router.add_get(
-            "/api/player",
-            self.Player
+            "/api/set_media_file",
+            self.set_media_file
+        )
+
+        self.app.router.add_static(
+            "/media/",
+            path=self.library.root_dir,
+            name="media"
         )
 
         # Add route for the main page.
@@ -55,11 +74,9 @@ class Streamline:
         )
 
     async def start(self):
-
         self.discoverer.start()
 
     async def stop(self):
-
         await self.discoverer.stop()
 
     # Frontend Routes.
@@ -83,9 +100,28 @@ class Streamline:
         return web.json_response(entries)
     
     
-    async def Player (self, request) :
+    async def set_media_file (self, request) :
         file = request.query.get("file", "")
-        print(file)
+        device = request.query.get("device", "")
+
+        media_file = f"http://192.168.0.156:8080/media/{file}"
+
+        print(media_file)
+
+        self.target_device = self.discoverer.devices[device]["player"]
+        await self.target_device.set_uri(media_file)
+
+        print(device, file)
+        return web.json_response("")
+    
+
+    async def play (self, request) :
+        await self.target_device.play()
+        return web.json_response("")
+    
+
+    async def pause (self, request) :
+        await self.target_device.pause()
         return web.json_response("")
 
 

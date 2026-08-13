@@ -1,5 +1,7 @@
 console.log("Streamline.js Loaded!");
 
+var selected_file = "";
+
 async function Devices() {
 
     const response =
@@ -42,7 +44,10 @@ function RenderFileList(entries) {
         }
 
         if (entry.type === "file") {
-            item.onclick = () => Player(item, entry.path);
+            item.onclick = () => {
+                selected_file = entry.path
+                item.classList.add("highlighted");
+            }
         }
 
         list.appendChild(item);
@@ -55,8 +60,16 @@ async function LoadLibrary(path = "") {
     RenderFileList(entries);
 }
 
-async function Player(item, file = "") {
-    item.classList.add("highlighted");
-    console.log(file);
-    const response = await fetch(`api/player?file=${file}`)
+async function set_media_file() {
+    console.log("Setting media file.");
+    var device = document.getElementById("device").value;
+    const response = await fetch(`api/set_media_file?file=${selected_file}&device=${device}`);
 } 
+
+async function play () {
+    const response = await fetch("/api/play")
+}
+
+async function pause () {
+    const response = await fetch("/api/pause")
+}
