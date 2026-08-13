@@ -42,12 +42,26 @@ container {
     padding: var(--gap);
     border-radius: var(--gap);
     gap: var(--gap);
+    transition: all 0.5s ease;
 }
 
-::marker {
-    color: red;
+.media_list {
+    flex-direction: row;
 }
 
-li.highlighted {
+media_entry {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+media_icon svg {
+    width: 80px;
+    height: 80px;
+    display: block;
+}
+
+media_entry.highlighted {
     background: rgba(255,255,255,0.1);
 }

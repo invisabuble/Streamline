@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 60" xmlns:bx="https://boxy-svg.com">
+  <defs>
+    <bx:export>
+      <bx:file format="svg" href="#object-1" path="Untitled 2.svg"></bx:file>
+    </bx:export>
+  </defs>
+  <g transform="matrix(0.65463, 0, 0, 0.65463, 637.067627, -49.223221)">
+    <text style="stroke: rgb(255, 255, 255); fill: rgb(255, 255, 255); font-family: &quot;Shree Devanagari 714&quot;; font-size: 88.4px; font-style: italic; font-weight: 700; letter-spacing: -3.4px; word-spacing: 12.5px; white-space: pre;" x="-968.81" y="161.098">STREAMLINE</text>
+    <line style="stroke: rgb(255, 255, 255); stroke-width: 7.9px;" x1="-818.9" y1="126.989" x2="-741.66" y2="126.549"></line>
+    <line style="stroke: rgb(255, 255, 255); stroke-width: 7.9;" x1="-935.47" y1="127.24" x2="-851.8" y2="126.87"></line>
+    <line style="stroke: rgb(255, 255, 255); stroke-width: 7.9;" x1="-722.13" y1="126.625" x2="-624.25" y2="126.944"></line>
+    <line style="stroke: rgb(255, 255, 255); stroke-width: 7.9;" x1="-581.48" y1="126.299" x2="-415.3" y2="126.841"></line>
+    <path d="M 549.727 208.621 L 585.434 254.843 L 532.061 254.843 L 549.727 208.621 Z" bx:shape="triangle 532.061 208.621 53.373 46.222 0.331 0 1@05bec772" style="fill: rgba(255, 255, 255, 0); stroke-width: 7.9px; stroke: rgb(255, 255, 255); transform-box: fill-box; transform-origin: 50% 50%;" transform="matrix(-0.188307, 0.98211, -0.98211, -0.188307, -954.554426, -100.269721)"></path>
+  </g>
+</svg>

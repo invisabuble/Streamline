@@ -1,6 +1,7 @@
-console.log("Streamline.js Loaded!");
+
 
 var selected_file = "";
+var is_media_set = false;
 
 async function Devices() {
 
@@ -30,31 +31,38 @@ async function Devices() {
     }
 }
 
+function reset_dir () {
+    LoadLibrary();
+}
+
 
 function RenderFileList(entries) {
     const list = document.getElementById("file-list");
     list.innerHTML = "";
 
     for (const entry of entries) {
-        const item = document.createElement("li");
-        item.textContent = entry.name;
+
+        const item = new window.Generic_Dir(entry.type, list, entry.name);
 
         if (entry.type === "directory") {
-            item.onclick = () => LoadLibrary(entry.path);
+            item.element.onclick = (event) => {
+                event.stopPropagation();
+                LoadLibrary(entry.path)
+            };
         }
 
         if (entry.type === "file") {
-            item.onclick = () => {
+            item.element.onclick = (event) => {
+                event.stopPropagation();
                 selected_file = entry.path
-                item.classList.add("highlighted");
+                item.element.classList.add("highlighted");
             }
         }
-
-        list.appendChild(item);
     }
 }
 
 async function LoadLibrary(path = "") {
+    is_media_set = false;
     const response = await fetch(`/api/library?path=${encodeURIComponent(path)}`);
     const entries = await response.json();
     RenderFileList(entries);
@@ -62,14 +70,19 @@ async function LoadLibrary(path = "") {
 
 async function set_media_file() {
     console.log("Setting media file.");
+    is_media_set = true;
     var device = document.getElementById("device").value;
     const response = await fetch(`api/set_media_file?file=${selected_file}&device=${device}`);
 } 
 
 async function play () {
+    if (!is_media_set) {
+        set_media_file();
+    }
     const response = await fetch("/api/play")
 }
 
 async function pause () {
+    is_media_set = true;
     const response = await fetch("/api/pause")
 }
