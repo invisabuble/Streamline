@@ -1,0 +1,19 @@
+services:
+
+  Streamline:
+    hostname: Streamline
+    container_name: Streamline
+    image: streamline:latest
+    build:
+      context: ./docker
+      dockerfile: Streamline/streamline.dockerfile
+    volumes:
+      - ./volumes/Streamline:/Streamline:ro
+      - ./mnt/streamline_media:/Streamline/media
+    expose:
+      - "8080"
+    ports:
+      - "8080:8080"
+    tty: true
+    stdin_open: true
+    network: host

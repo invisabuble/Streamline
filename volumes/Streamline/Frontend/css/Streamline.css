@@ -50,6 +50,7 @@ container {
 }
 
 media_entry {
+    max-width: 100px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -60,6 +61,11 @@ media_icon svg {
     width: 80px;
     height: 80px;
     display: block;
+}
+
+media_title {
+    max-width: 100px;
+    overflow: hidden;
 }
 
 media_entry.highlighted {
