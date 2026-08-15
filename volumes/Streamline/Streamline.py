@@ -75,7 +75,7 @@ class Streamline:
         )
 
         self.app.router.add_static(
-            self.media_folder,
+            "/media/",
             path=self.library.root_dir,
             name="media"
         )

@@ -24,7 +24,7 @@ fi
 # mount_usb.sh - mount every attached USB drive under /mnt/usbN
 # Run with sudo: sudo ./mount_usb.sh
 
-MOUNT_BASE="/mnt/streamline_media/usb"
+MOUNT_BASE="/mnt/usb"
 INDEX=1
 
 # List top-level block devices and their transport type (usb, sata, mmc...).
