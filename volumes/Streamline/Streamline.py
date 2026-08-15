@@ -13,7 +13,7 @@ class Streamline:
     def __init__(self, host="0.0.0.0", port=8080):
 
         self.discoverer = DiscoverAVs()
-        self.library = MediaLibrary("./media")
+        self.library = MediaLibrary("/mnt")
 
         self.media = self.library.list_files()
 
