@@ -23,6 +23,10 @@ class MediaLibrary:
 
         entries = []
         for name in sorted(os.listdir(target_dir)):
+            if name.startswith("."):
+                continue  # skip hidden files - macOS AppleDouble junk (._Movie.mp4),
+                          # .DS_Store, .Trashes, etc. commonly left on USB drives
+
             full_path = os.path.join(target_dir, name)
             entry_path = os.path.join(relative_path, name)
 
@@ -32,6 +36,18 @@ class MediaLibrary:
                 entries.append({"name": name, "type": "file", "path": entry_path})
 
         return entries
+
+    def resolve_file(self, relative_path):
+        """
+        Resolve a relative file path to a safe absolute path, for casting.
+        Raises ValueError if the path escapes root_dir or isn't a real file.
+        """
+        absolute_path = self._resolve(relative_path)
+
+        if not os.path.isfile(absolute_path):
+            raise ValueError(f"Not a file: {relative_path!r}")
+
+        return absolute_path
 
     def _resolve(self, relative_path):
         """
@@ -45,11 +61,3 @@ class MediaLibrary:
             raise ValueError(f"Path escapes media root: {relative_path!r}")
 
         return target
-    
-if __name__ == "__main__":
-    root_dir = "../media"
-    lib = MediaLibrary(root_dir)
-    files = lib.list_files()
-
-    for file in files:
-        print(file["name"], file["path"])

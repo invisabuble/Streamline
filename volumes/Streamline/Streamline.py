@@ -28,10 +28,12 @@ def get_local_ip():
 
 class Streamline:
 
-    def __init__(self, host="0.0.0.0", port=8080):
+    def __init__(self, host="0.0.0.0", port=8080, media_folder = "/mnt"):
+
+        self.media_folder = media_folder
 
         self.discoverer = DiscoverAVs()
-        self.library = MediaLibrary("/mnt")
+        self.library = MediaLibrary(self.media_folder)
 
         self.media = self.library.list_files()
 
@@ -72,7 +74,7 @@ class Streamline:
         )
 
         self.app.router.add_static(
-            "/media/",
+            f"{self.media_folder}/",
             path=self.library.root_dir,
             name="media"
         )
