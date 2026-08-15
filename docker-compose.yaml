@@ -8,7 +8,7 @@ services:
       context: ./docker
       dockerfile: Streamline/streamline.dockerfile
     volumes:
-      - ./volumes/Streamline:/Streamline:ro
+      - ./volumes/Streamline:/Streamline
       - ./mnt/streamline_media:/Streamline/media
     expose:
       - "8080"
@@ -16,4 +16,4 @@ services:
       - "8080:8080"
     tty: true
     stdin_open: true
-    network: host
+    network_mode: host
