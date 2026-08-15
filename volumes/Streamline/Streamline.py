@@ -2,10 +2,28 @@ import asyncio
 import os
 from aiohttp import web
 from pathlib import Path
+import socket
 
 
 from modules.DiscoverAVs import DiscoverAVs
 from modules.ListMedia import MediaLibrary
+
+
+def get_local_ip():
+    # Create a UDP socket
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        # Connect to a dummy address (8.8.8.8 is Google's public DNS)
+        # This doesn't actually send packets or require internet access, 
+        # it just forces the OS to pick the right network interface.
+        s.connect(("8.8.8.8", 80))
+        local_ip = s.getsockname()[0]
+    except Exception:
+        # Fallback if no network interface is active
+        local_ip = "127.0.0.1"
+    finally:
+        s.close()
+    return local_ip
 
 
 class Streamline:
@@ -104,7 +122,7 @@ class Streamline:
         file = request.query.get("file", "")
         device = request.query.get("device", "")
 
-        media_file = f"http://192.168.0.156:8080/media/{file}"
+        media_file = f"http://{get_local_ip()}:8080/media/{file}"
 
         print(media_file)
 
