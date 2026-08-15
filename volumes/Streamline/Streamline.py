@@ -1,5 +1,6 @@
 import asyncio
 import os
+import urllib.parse
 from aiohttp import web
 from pathlib import Path
 import socket
@@ -28,7 +29,7 @@ def get_local_ip():
 
 class Streamline:
 
-    def __init__(self, host="0.0.0.0", port=8080, media_folder = "/mnt"):
+    def __init__(self, host="0.0.0.0", port=8080, media_folder = "/mnt/"):
 
         self.media_folder = media_folder
 
@@ -74,7 +75,7 @@ class Streamline:
         )
 
         self.app.router.add_static(
-            f"{self.media_folder}/",
+            self.media_folder,
             path=self.library.root_dir,
             name="media"
         )
@@ -123,8 +124,8 @@ class Streamline:
     async def set_media_file (self, request) :
         file = request.query.get("file", "")
         device = request.query.get("device", "")
-
-        media_file = f"http://{get_local_ip()}:8080/media/{file}"
+        encoded_file = urllib.parse.quote(file, safe="/")
+        media_file = f"http://{get_local_ip()}:8080/media/{encoded_file}"
 
         print(media_file)
 
