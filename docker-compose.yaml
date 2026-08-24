@@ -30,6 +30,8 @@ services:
       dockerfile: Frontend/apache.dockerfile
     volumes:
       - ./volumes/Frontend:/var/www/html:ro
+    ports:
+      - "80:80"
     tty: true
     stdin_open: true
     extra_hosts:
