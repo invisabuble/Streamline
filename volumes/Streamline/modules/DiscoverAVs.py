@@ -1,102 +1,69 @@
-import asyncio
-import socket
+from modules.SL_CM import SL_CM
+from modules.AVPlayer import AVPlayer
+
 import time
-import urllib.request
+import socket
+import asyncio
 import urllib.parse
+import urllib.request
 import xml.etree.ElementTree as ET
 
-from .AVPlayer import AVPlayer
-
-class DiscoverAVs_Instance_Error (Exception) :
-    def __init__ (self) :
-        super().__init__("Only a single instance of DiscoverAVs should exist at once.")
-
-class DiscoverAVs:
-    """
-    Discover AV devices on a local network.
-    """
-
-    instance_created = False
-
-    def __init__(self, search_interval=30, stale_after=60):
-        # Firstly check whether an instance is running so we dont accidentally create more than one.
-        if (DiscoverAVs.instance_created) :
-            raise DiscoverAVs_Instance_Error()
-
-        # Create a socket object and set it to non blocking to search for AV devices on the network.
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock.setblocking(False)
+class DiscoverAVs (SL_CM) :
+    def __init__ (self, search_interval = 15, stale_interval = 30) :
+        super().__init__(search_interval)
 
         self.search_interval = search_interval
-        self.stale_after = stale_after
+        self.stale_interval  = stale_interval
 
-        self.required_device_info = ["friendlyName", "manufacturer", "modelDescription"]
-        self.devices = {}
-        self._task = None
+        # Setup a non blocking socket to query the network.
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.socket.setblocking(False)
 
-        DiscoverAVs.instance_created = True
-
-
-    def start(self):
-        """
-        Start the discovery running in an endless loop.
-        """
-        self._task = asyncio.create_task(self._Discoverer())
-
-
-    def stop (self):
-        """
-        Stop the discovery loop and close the socket.
-        """
-        if self._task:
-            self._task.cancel()
-        self.sock.close()
-
-
-    async def _Discoverer(self):
-        """
-        Discover AV devices on the network.
-        """
+        # Information to extract from AV devices on the network.
+        self.required_info = [
+            "friendlyName",
+            "manufacturer",
+            "modelDescription"
+            ]
         
-        # Get the current event loop.
-        loop = asyncio.get_event_loop()
+        # Device, player list to keep track of AV devices on the network.
+        self.devices = {}
 
-        while True:
-            # Continuously send the search criteria to the network.
-            self.sock.sendto(
-                b'M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\n'
-                b'MAN: "ssdp:discover"\r\nMX: 3\r\n'
-                b'ST: urn:schemas-upnp-org:service:AVTransport:1\r\n\r\n',
-                ("239.255.255.250", 1900)
-            )
+    async def Cleanup (self):
+        # Close the socket connection.
+        self.socket.close()
 
-            # Calculate the time spent searching the network and waiting for replies.
-            deadline = loop.time() + self.search_interval
+    async def SL_Task (self) :
+        # Find AV devices on the network.
+         
+        self.socket.sendto( # Query the network to get any AV devices
+            b'M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\n'
+            b'MAN: "ssdp:discover"\r\nMX: 3\r\n'
+            b'ST: urn:schemas-upnp-org:service:AVTransport:1\r\n\r\n',
+            ("239.255.255.250", 1900)
+        )
 
-            # Whilst the current loop time is less than the deadline time, keep searching.
-            while loop.time() < deadline:
-                try:
-                    # Wait for a response from the network.
-                    data, addr = await asyncio.wait_for(
-                        loop.sock_recvfrom(self.sock, 65507), deadline - loop.time()
-                    )
-                except asyncio.TimeoutError:
-                    # If the connection times out then stop the loop.
-                    break
+        loop = asyncio.get_running_loop()             # Get the current running loop
+        deadline = loop.time() + self.search_interval # Calculate the deadline time.
 
-                # Pass any received data to the handler.
-                await self._handler(data, addr)
+        while True:                                   # While time remains loop through responses to collect them all.
+            remaining = deadline - loop.time()
+            if remaining <= 0:
+                break
+            try:
+                data, addr = await asyncio.wait_for(  # Wait for a response from the network.
+                    loop.sock_recvfrom(self.socket, 65507), remaining
+                )
+            except asyncio.TimeoutError:
+                break
+            await self._handler(data, addr)           # Handle the received data.
+        
+        now = time.time()
+        self.devices = {                              # Remove stale devices from the device dictionary.
+            ip: device for ip, device in self.devices.items() if now - device.properties["last_seen"] < self.stale_interval
+        }
 
-            # Clear out any devices that havent registered a response within the stale_after time.
-            now = time.time()
-            self.devices = {ip: d for ip, d in self.devices.items()
-                             if now - d["last_seen"] < self.stale_after}
-            
-    
     def _get_device_value(self, device, namespace, value):
-        """
-        Extract values from a device descriptor.
-        """
         # Attempt to get the value within the passed device namespace.
         element = device.find(f"d:{value}", namespace)
 
@@ -105,46 +72,41 @@ class DiscoverAVs:
             return element.text.strip()
 
         return None
-            
 
-    async def _handler(self, data, addr):
-        """
-        Handle data from the discoverer.
-        """
+    async def _handler (self, data, addr) :
+        # Handle incoming data from the socket.
+        
+        IP = addr[0]
 
-        # Get the IP address of the device.
-        ip = addr[0]
-
-        # Update the last seen time and return if the device has already been found.
-        if ip in self.devices:
-            self.devices[ip]["last_seen"] = time.time()
+        # If the device is already in the dictionary then update its last_seen time.
+        if (IP in self.devices) :
+            self.devices[IP].properties["last_seen"] = time.time()
             return
-
-        # Get the location of the device descriptor XML file.
-        text = data.decode(errors="ignore")
+        
+        # Get the location of the devices descriptor XML
+        data = data.decode(errors = "ignore")
         location = next(
             (
                 l.split(": ", 1)[1]
-                for l in text.split("\r\n")
+                for l in data.split("\r\n")
                 if l.lower().startswith("location:")
             ),
             None
         )
-
-        # If no location is found then return.
         if not location:
+            # If no location is found then return.
             return
-
-        # Pull the device descriptor XML without blocking the asyncio event loop.
+        
+        # Pull the device descriptor XML without blocking the event loop.
         try:
             Device_XML = ET.fromstring(
-                    await asyncio.to_thread(
-                        lambda: urllib.request.urlopen(location, timeout=5).read()
-                    )
+                await asyncio.to_thread(
+                    lambda: urllib.request.urlopen(location, timeout = 5).read()
                 )
+            )
         except Exception:
             return
-
+        
         # UPnP device descriptor namespace.
         ns = {
             "d": "urn:schemas-upnp-org:device-1-0"
@@ -183,27 +145,23 @@ class DiscoverAVs:
                     )
 
                 # Build the dictionary of device information.
-                device_info = {info:self._get_device_value(device, ns, info) for info in self.required_device_info }
+                device_info = {info:self._get_device_value(device, ns, info) for info in self.required_info }
 
                 # Save the device in the devices dict.
-                self.devices[ip] = {
-                    "control_url" : control_url,
-                    "service_type": service_type,
-                    "device_info" : device_info,
-                    "player"      : AVPlayer(service_type, control_url),
-                    "last_seen"   : time.time()
-                    }
+                self.devices[IP] = AVDevice(control_url, service_type, device_info)
+
+                self.log(f'Added new AV device : {IP} [{device_info["friendlyName"]}]')
                 break
 
+class AVDevice:
+    # Encapsulates the device properties and device specific player object.
+    def __init__ (self, control_url, service_type, device_info) :
 
-# Example use
-async def main():
-    discoverer = DiscoverAVs(search_interval=15)
-    discoverer.start()
+        self.properties = {
+            "control_url" : control_url,
+            "service_type": service_type,
+            "device_info" : device_info,
+            "last_seen"   : time.time(),
+        }
 
-    while True:
-        await asyncio.sleep(5)
-        print("Currently known devices:", discoverer.devices)
-
-if __name__ == "__main__":
-    asyncio.run(main())
+        self.player = AVPlayer(service_type, control_url, device_info)

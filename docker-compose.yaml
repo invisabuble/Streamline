@@ -7,13 +7,16 @@ services:
     build:
       context: ./docker
       dockerfile: Streamline/streamline.dockerfile
+    privileged: true
     volumes:
       - ./volumes/Streamline:/Streamline
-      - /mnt:/mnt
+      - /dev:/dev
+      - /run/udev:/run/udev:ro
     expose:
       - "8080"
     ports:
       - "8080:8080"
     tty: true
+    init: true
     stdin_open: true
     network_mode: host
