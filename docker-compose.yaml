@@ -20,3 +20,17 @@ services:
     init: true
     stdin_open: true
     network_mode: host
+
+  Streamline_FE:
+    hostname: Streamline_FE
+    container_name: Streamline_FE
+    image: streamline_fe:latest
+    build:
+      context: ./docker
+      dockerfile: Frontend/apache.dockerfile
+    volumes:
+      - ./volumes/Frontend:/var/www/html:ro
+    tty: true
+    stdin_open: true
+    extra_hosts:
+      - "Streamline_FE:127.0.1.1"

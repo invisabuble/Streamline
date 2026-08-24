@@ -23,3 +23,4 @@ fi
 
 # Run the docker containers in detached mode.
 docker compose up Streamline -d
+docker compose up Streamline_FE -d
