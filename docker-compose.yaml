@@ -36,3 +36,4 @@ services:
     stdin_open: true
     extra_hosts:
       - "Streamline_FE:127.0.1.1"
+    network_mode: host
