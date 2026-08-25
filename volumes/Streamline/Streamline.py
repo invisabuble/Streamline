@@ -6,6 +6,7 @@ import signal
 import asyncio
 import functools
 import urllib.parse
+import aiohttp_cors
 from aiohttp import web
 
 
@@ -79,6 +80,18 @@ class Streamline:
             "/api/stop_target",
             self.stop_target
         )
+
+        self.cors = aiohttp_cors.setup(self.app, defaults={
+            "http://streamline.local": aiohttp_cors.ResourceOptions(
+                allow_credentials=True,
+                expose_headers="*",
+                allow_headers="*",
+                allow_methods="*",
+            )
+        })
+
+        for route in list(self.app.router.routes()) :
+            self.cors.add(route)
 
         # Host the media folder over http so the AV devices on the network can access the files.
         self.app.router.add_static(
