@@ -72,6 +72,7 @@ class FileManager (SL_CM) :
         
         entries = []
         directory_listing = sorted(os.listdir(target_dir))
+        icon_file = self._find_file_icon(directory_listing, directory_path)
 
         for entry in directory_listing:
 
@@ -94,7 +95,7 @@ class FileManager (SL_CM) :
                 Info = {
                     "Type"     : "File",
                     "Playable" : self.is_file_playable(full_path),
-                    "Icon"     : self._find_file_icon(directory_listing, entry)
+                    "Icon"     : icon_file
                 }
 
             if (Info) : 
@@ -108,14 +109,13 @@ class FileManager (SL_CM) :
 
         return entries
     
-    def _find_file_icon (self, directory_listing, entry) :
-        # Attempt to find a files icon alongside the media file.
-        base_name = os.path.splitext(entry)[0]
+    def _find_file_icon (self, directory_listing, directory_path) :
+        # Attempt to find a file named "icon" alongside the media file.
 
         for candidate in directory_listing :
             candidate_base, candidate_ext = os.path.splitext(candidate)
-            if candidate_base == base_name and candidate_ext.lower() in self.valid_icons :
-                return candidate
+            if candidate_base == "icon" and candidate_ext.lower() in self.valid_icons :
+                return os.path.join(directory_path, candidate)
 
         return "UNKNOWN"
     

@@ -1,3 +1,6 @@
+import { media } from "./handler.js"
+import { content } from "./handler.js";
+
 console.log("Streamline.js loaded!");
 
 const host = "http://streamline.local:8080"
@@ -24,8 +27,10 @@ async function streamline () {
         selector.appendChild(option);
     }
 
-    for (const [entry, info] of Object.entries(files)) {
-        console.log(entry, info);
+    for (const root of rootData.Info.Children) {
+        for (const folder of root.Info.Children) {
+            new media(folder);
+        }
     }
 
 }
