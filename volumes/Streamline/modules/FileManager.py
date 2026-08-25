@@ -12,6 +12,7 @@ class FileManager (SL_CM) :
         self._fix_semaphore = asyncio.Semaphore(max_fix_threads)
 
         self.valid_files = (".mkv", ".mp4", ".avi", ".mov")
+        self.valid_icons = (".png", ".jpg")
         self.media_dir = os.path.abspath(media_dir)
 
         # List to store all files, directories within the media directory.
@@ -70,8 +71,9 @@ class FileManager (SL_CM) :
             raise ValueError (f"Passed path escapes media directory: {directory_path}")
         
         entries = []
+        directory_listing = sorted(os.listdir(target_dir))
 
-        for entry in sorted(os.listdir(target_dir)) :
+        for entry in directory_listing:
 
             # Skip over any hidden files.
             if entry.startswith(".") :
@@ -91,7 +93,8 @@ class FileManager (SL_CM) :
             elif (entry.lower().endswith(self.valid_files)) :
                 Info = {
                     "Type"     : "File",
-                    "Playable" : self.is_file_playable(full_path)
+                    "Playable" : self.is_file_playable(full_path),
+                    "Icon"     : self._find_file_icon(directory_listing, entry)
                 }
 
             if (Info) : 
@@ -104,6 +107,17 @@ class FileManager (SL_CM) :
                 )
 
         return entries
+    
+    def _find_file_icon (self, directory_listing, entry) :
+        # Attempt to find a files icon alongside the media file.
+        base_name = os.path.splitext(entry)[0]
+
+        for candidate in directory_listing :
+            candidate_base, candidate_ext = os.path.splitext(candidate)
+            if candidate_base == base_name and candidate_ext.lower() in self.valid_icons :
+                return candidate
+
+        return "UNKNOWN"
     
     def is_file_playable (self, file_path) : 
         if not file_path.lower().endswith((".mp4", ".mov")) :
