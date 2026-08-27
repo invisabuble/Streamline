@@ -129,7 +129,7 @@ export class season extends media {
     const episodes = document.createElement("episodes");
     for (const episode of episode_files) {
 
-      const play_media = this.create_play_media(episode.Path, episode.Name);
+      const play_media = this.create_play_media(episode.Path, episode.Name.slice(0, -4));
       episodes.appendChild(play_media);
 
     }
