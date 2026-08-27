@@ -1,5 +1,6 @@
 from modules.SL_CM import SL_CM
 
+import re
 import os
 import struct
 import asyncio
@@ -56,6 +57,11 @@ class FileManager (SL_CM) :
             # This prevents files being added to the fix list multiple times.
             await asyncio.gather(*fix_tasks, return_exceptions=True)
 
+    def natural_sort_key(self, s):
+        # Sort the items in the dictionary.
+        return [int(text) if text.isdigit() else text.lower()
+                for text in re.split(r'(\d+)', s)]
+
     def list_files (self, directory_path = "") :
         # List all files within a passed directory path.
 
@@ -71,7 +77,7 @@ class FileManager (SL_CM) :
             raise ValueError (f"Passed path escapes media directory: {directory_path}")
         
         entries = []
-        directory_listing = sorted(os.listdir(target_dir))
+        directory_listing = sorted(os.listdir(target_dir), key=self.natural_sort_key)
         icon_file = self._find_file_icon(directory_listing, directory_path)
 
         for entry in directory_listing:
