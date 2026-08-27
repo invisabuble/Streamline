@@ -34,15 +34,31 @@ function attach_behaviors() {
 }
 
 async function streamline () {
-  const files = await get_route("get_file_list");
 
-  for (const root of files) {
-    for (const group of root.Info.Children) {
-      new media_container(group, host);
+    const files   = await get_route("get_file_list");
+    const devices = await get_route("devices");
+
+    // If the devices list is populated then delete the no av message.
+    const selector = document.getElementById("selector");
+    if (Object.keys(devices).length > 0) {
+        selector.innerHTML = "";
     }
-  }
 
-  attach_behaviors();
+    for (const [ip, device] of Object.entries(devices)) {
+        console.log(ip, device);
+        const option = document.createElement("option");
+        option.value = ip;
+        option.textContent = device.friendlyName || ip;
+        selector.appendChild(option);
+    }
+
+    for (const root of files) {
+        for (const group of root.Info.Children) {
+            new media_container(group, host);
+        }
+    }
+
+    attach_behaviors();
 }
 
 streamline();

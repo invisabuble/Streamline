@@ -26,6 +26,22 @@ body {
   display: none;
 }
 
+header {
+  width: calc(100% - 2 * var(--gap));
+  height: 60px;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(0,0,0,0.2);
+  padding-left: var(--gap);
+  padding-right: var(--gap);
+}
+
+header_text {
+  font-size: 50px;
+}
+
 content {
   display: flex;
   flex-direction: row;
@@ -81,7 +97,7 @@ media_card {
 media_card img {
   width: var(--media_card_width);
   height: var(--media_card_height);
-  background: blue;
+  background-image: "./image/icon_nf.png";
   border-radius: var(--gap);
   flex-shrink: 0;
   display: block;
