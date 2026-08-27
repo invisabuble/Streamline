@@ -38,20 +38,20 @@ export class media_container {
       let card;
 
       if (type === "movie") {
-        // Resolve the actual file node, whether media_json IS the file or wraps one.
         const fileNode = media_json.Info.Type === "File"
           ? media_json
           : media_json.Info.Children.find(c => c.Info.Type === "File");
 
-        const title = media_json.Info.Type === "File" ? this.media_title : media_json.Name;
+        const has_prefix = media_json.Info.Type !== "File";
+        const title = has_prefix ? media_json.Name.slice(3) : this.media_title;
         const icon_url = `${this.host}/mnt/${encodeURI(fileNode.Info.Icon)}`;
 
-        card = new movie(this.media_title, icon_url, title.slice(3), fileNode.Path);
+        card = new movie(this.host, this.media_title, icon_url, title, fileNode.Path);
       }
       else {
         const title = media_json.Name.slice(3);
         const icon_url = `${this.host}/mnt/${encodeURI(media_json.Info.Children[0].Info.Icon)}`;
-        card = new season(this.media_title, icon_url, title, media_json.Info.Children);
+        card = new season(this.host, this.media_title, icon_url, title, media_json.Info.Children);
       }
 
       this.media_group.appendChild(card.media);
@@ -62,7 +62,8 @@ export class media_container {
 }
 
 export class media {
-  constructor (media_title, img, title) {
+  constructor (host, media_title, img, title) {
+    this.host = host;
     this.media_title = media_title;
     this.title = title;
 
@@ -95,7 +96,12 @@ export class media {
     return play_media;
   }
 
-  play_media_file (media_path, episode_name = "") {
+  async play_media_file (media_path, episode_name = "") {
+
+    const device = document.getElementById("selector").value;
+    if (device == "No AV Devices Found") {
+      console.log(device);
+    }
 
     let media_title = `${this.media_title} : ${this.title}`;
     
@@ -103,13 +109,25 @@ export class media {
       media_title += ` : ${episode_name}`;
     }
 
-    console.log(media_title, media_path);
+    const params = new URLSearchParams({
+      file  : media_path,
+      device: device,
+      title : media_title
+    });
+
+    const route = `${this.host}/api/set_target?${params.toString()}`;
+    const play_ = `${this.host}/api/play_target?device=${device}&speed=1`;
+    
+    await fetch(route);
+    await fetch(play_);
+
+    console.log(route);
   }
 }
 
 export class movie extends media {
-  constructor (media_title, img, title, media_path) {
-    super(media_title, img, title);
+  constructor (host, media_title, img, title, media_path) {
+    super(host, media_title, img, title);
     this.media_path = media_path;
 
     this.media_desc.textContent = "Two gay retards go munting together."
@@ -120,8 +138,8 @@ export class movie extends media {
 }
 
 export class season extends media {
-  constructor (media_title, img, title, episode_files) {
-    super(media_title, img, title);
+  constructor (host, media_title, img, title, episode_files) {
+    super(host, media_title, img, title);
     this.media_desc.textContent = "Another season of munting..."
     
     // Iterate through the episodes creating the play media elements for each episode.

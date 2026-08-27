@@ -10,15 +10,19 @@ async function get_route(route) {
 }
 
 function attach_behaviors() {
-  document.querySelectorAll('media_group').forEach(media_group => {
+    document.querySelectorAll('media_group').forEach(media_group => {
     media_group.addEventListener('wheel', (e) => {
-      if (e.target.closest('episodes')) return;
-      if (e.deltaY !== 0) {
+        if (e.target.closest('episodes')) return;
+
+        const overflowing = media_group.scrollWidth > media_group.clientWidth;
+
+        if (overflowing && e.deltaY !== 0) {
         e.preventDefault();
         media_group.scrollLeft += e.deltaY;
-      }
+        }
+        // If not overflowing, do nothing — let the event bubble/scroll normally.
     });
-  });
+    });
 
   document.querySelectorAll('media_content').forEach(content_element => {
     content_element.addEventListener('click', (e) => e.stopPropagation());

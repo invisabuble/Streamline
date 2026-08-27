@@ -45,6 +45,7 @@ header_text {
 content {
   display: flex;
   flex-direction: row;
+  justify-content: space-evenly;
   flex-wrap: wrap;
   gap: var(--gap);
   width: calc(100% - var(--gap) * 2);
@@ -156,7 +157,8 @@ episodes {
 }
 
 play_media {
-    min-width: 200px;
+    width: 150px;
+    border-radius: var(--gap);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -166,4 +168,19 @@ play_media {
 
 play_media:active {
     background:blue;
+}
+
+@media (max-width: 480px) {
+  :root {
+    --media_card_width: 150px;
+    --media_desc_max_w: 300px;
+  }
+
+  header_text {
+    font-size: 30px;
+  }
+
+  media_title,media_group_title {
+    font-size: 20px;
+  }
 }
