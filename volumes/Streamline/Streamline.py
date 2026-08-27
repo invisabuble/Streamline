@@ -147,7 +147,7 @@ class Streamline:
         # Set a target media file on a target device.
 
         # Pull the target file and target device from the request.
-        file, device = self._get_request_variable(request, ["file", "device"])
+        file, device, title = self._get_request_variable(request, ["file", "device", "title"])
 
         encoded_file = urllib.parse.quote(file, safe="/")
         media_file = f"http://{self.local_ip}:{self.port}{self.mdir}{encoded_file}"
@@ -157,7 +157,7 @@ class Streamline:
 
         print(f"Playing {media_file} on {target_device.properties["device_info"]["friendlyName"]}")
         # Set the target URL on the AV device.
-        await target_device.player.set_uri (media_file, f"{self.mdir}{file}")
+        await target_device.player.set_uri (media_file, f"{self.mdir}{file}", title)
 
         return web.json_response("")
     

@@ -48,7 +48,7 @@ async function streamline () {
         console.log(ip, device);
         const option = document.createElement("option");
         option.value = ip;
-        option.textContent = device.friendlyName || ip;
+        option.textContent = device.device_info.friendlyName || ip;
         selector.appendChild(option);
     }
 

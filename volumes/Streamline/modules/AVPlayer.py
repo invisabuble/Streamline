@@ -101,14 +101,10 @@ class AVPlayer :
         return duration, size
     
     
-    async def set_uri(self, uri, local_path):
+    async def set_uri(self, uri, local_path, title = ""):
         # Send the file URL to the AV device.
 
         print(f"Setting media URI: {uri}")
-
-        # Get the media title and remove the extension.
-        title = uri.split("/")[-1]
-        title = title[:-4] 
 
         # Create the escaped URI and guess the mime type.
         escaped_uri = escape(uri)
@@ -116,6 +112,10 @@ class AVPlayer :
 
         # Get information associated with the media file.
         duration, size = await self._get_media_info(local_path)
+
+        # If the title string is empty set it to 'Movie'
+        if (title == "") :
+            title = "Movie"
 
         # Create the XML metadata.
         metadata = f"""<DIDL-Lite xmlns="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:upnp="urn:schemas-upnp-org:metadata-1-0/upnp/">
