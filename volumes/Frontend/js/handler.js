@@ -23,11 +23,11 @@ export class media_container {
 
     this.container_json = container_json;
     this.host = host;
-    this.title = container_json.Name;
+    this.media_title = container_json.Name;
 
     // Create the media container elements.
     this.element = document.createElement("media_container");
-    this.element.innerHTML = `<media_group_title class="media_content_text">${this.title}</media_group_title>`;
+    this.element.innerHTML = `<media_group_title class="media_content_text">${this.media_title}</media_group_title>`;
     this.media_group = document.createElement("media_group");
     this.element.appendChild(this.media_group);
 
@@ -43,15 +43,15 @@ export class media_container {
           ? media_json
           : media_json.Info.Children.find(c => c.Info.Type === "File");
 
-        const title = media_json.Info.Type === "File" ? this.title : media_json.Name;
+        const title = media_json.Info.Type === "File" ? this.media_title : media_json.Name;
         const icon_url = `${this.host}/mnt/${encodeURI(fileNode.Info.Icon)}`;
 
-        card = new movie(icon_url, title.slice(3), fileNode.Path);
+        card = new movie(this.media_title, icon_url, title.slice(3), fileNode.Path);
       }
       else {
         const title = media_json.Name.slice(3);
         const icon_url = `${this.host}/mnt/${encodeURI(media_json.Info.Children[0].Info.Icon)}`;
-        card = new season(icon_url, title, media_json.Info.Children);
+        card = new season(this.media_title, icon_url, title, media_json.Info.Children);
       }
 
       this.media_group.appendChild(card.media);
@@ -62,7 +62,10 @@ export class media_container {
 }
 
 export class media {
-  constructor (img, title) {
+  constructor (media_title, img, title) {
+    this.media_title = media_title;
+    this.title = title;
+
     this.media = document.createElement("media");
     this.media_card = document.createElement("media_card");
     this.media_card.innerHTML = `<img src="${img}">`;
@@ -82,20 +85,31 @@ export class media {
     play_media.dataset.path = Path;
 
     play_media.addEventListener("click", (event) => {
-      this.play_media_file(event.currentTarget.dataset.path);
+      if (Text == "Play") {
+        this.play_media_file(event.currentTarget.dataset.path);
+      } else {
+        this.play_media_file(event.currentTarget.dataset.path, Text);
+      }
     });
 
     return play_media;
   }
 
-  play_media_file (media_path) {
-    console.log(media_path);
+  play_media_file (media_path, episode_name = "") {
+
+    let media_title = `${this.media_title} : ${this.title}`;
+    
+    if (episode_name != "") {
+      media_title += ` : ${episode_name}`;
+    }
+
+    console.log(media_title, media_path);
   }
 }
 
 export class movie extends media {
-  constructor (img, title, media_path) {
-    super(img, title);
+  constructor (media_title, img, title, media_path) {
+    super(media_title, img, title);
     this.media_path = media_path;
 
     this.media_desc.textContent = "Two gay retards go munting together."
@@ -106,8 +120,8 @@ export class movie extends media {
 }
 
 export class season extends media {
-  constructor (img, title, episode_files) {
-    super(img, title);
+  constructor (media_title, img, title, episode_files) {
+    super(media_title, img, title);
     this.media_desc.textContent = "Another season of munting..."
     
     // Iterate through the episodes creating the play media elements for each episode.
