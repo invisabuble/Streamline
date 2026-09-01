@@ -32,7 +32,7 @@ body {
     background: #136F63;
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    height: 100dvh;
 }
 
 logo, header, content,
@@ -55,6 +55,10 @@ header {
 logo {
     justify-content: center;
     align-items: center;
+}
+
+logo_text {
+    font-size: 45px;
 }
 
 logo_text.title_text {
@@ -83,6 +87,7 @@ content {
 
 media_group {
     flex-direction: column;
+    flex-shrink: 0;
 }
 
 media_group_title {
@@ -97,6 +102,7 @@ media_group_content {
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: space-evenly;
+    flex-shrink: 0;
 }
 
 series {
@@ -108,7 +114,6 @@ series {
 }
 
 media {
-    background: rgba(0,0,0,0.1);
     transition: all 0.3s ease;
 }
 

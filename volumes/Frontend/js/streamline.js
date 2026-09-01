@@ -105,8 +105,8 @@ class media {
         const route = `${host}/api/set_target?${params.toString()}`;
         const play_ = `${host}/api/play_target?device=${device}&speed=1`;
         
-        //await fetch(route);
-        //await fetch(play_);
+        await fetch(route);
+        await fetch(play_);
 
         console.log(route);
     }
