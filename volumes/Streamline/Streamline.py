@@ -87,7 +87,13 @@ class Streamline:
                 expose_headers="*",
                 allow_headers="*",
                 allow_methods="*",
-            )
+            ),
+            "http://127.0.0.1": aiohttp_cors.ResourceOptions(
+                allow_credentials=True,
+                expose_headers="*",
+                allow_headers="*",
+                allow_methods="*",
+            ),
         })
 
         for route in list(self.app.router.routes()) :

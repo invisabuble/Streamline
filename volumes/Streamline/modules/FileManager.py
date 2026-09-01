@@ -13,15 +13,16 @@ class FileManager (SL_CM) :
         self._fix_semaphore = asyncio.Semaphore(max_fix_threads)
 
         self.valid_files = (".mkv", ".mp4", ".avi", ".mov")
-        self.valid_icons = (".png", ".jpg")
+        self.valid_icons = (".png", ".jpg", ".webp", ".jpeg")
         self.media_dir = os.path.abspath(media_dir)
 
-        # List to store all files, directories within the media directory.
+        # self.hierarchy is the classified media library - see _build_library().
+        # It's what gets served to the frontend directly, no separate transform step.
         self.hierarchy = []
         self.fix_blacklist = []
 
     async def SL_Task (self) :
-        # Scan through the list of files in the media directory tree.
+        # Scan through the media directory tree and build the classified library.
         # If any files are in the wrong format to be played correct them and add them to the playable list.
         self.hierarchy = self.list_files()
 
@@ -29,27 +30,28 @@ class FileManager (SL_CM) :
         fix_tasks = []
 
         # Iterate through the hierarchy and check all the files are playable.
-        def collect_non_playables (entry) :
+        # An Item's Media is either a single path (a movie - the Item itself
+        # carries "Playable"), or a list of episodes (a season - each episode
+        # carries its own "Playable").
+        def queue_fix (path, playable) :
+            if (playable) :
+                return
 
-            for item in entry:
+            # Construct the file path. If its in the blacklist then dont attempt to fix it.
+            file_path = os.path.join(self.media_dir, path)
+            if (file_path in self.fix_blacklist) :
+                return
 
-                # If the item is a file and its not playable then attempt to fix it.
-                if (item["Info"]["Type"] == "File" and not item["Info"]["Playable"]) :
+            # Create the fix task.
+            fix_tasks.append(self._fix_non_playable(file_path))
 
-                    # Construct the file path. If its in the blacklist then dont attempt to fix it.
-                    file_path = os.path.join(self.media_dir, item["Path"])
-                    if (file_path in self.fix_blacklist) :
-                        continue
-
-                    # Create the fix task.
-                    fix_tasks.append(self._fix_non_playable(file_path))
-
-                    continue
-
-                if (item["Info"]["Type"] == "Directory") :
-                    collect_non_playables(item["Info"]["Children"])
-
-        collect_non_playables(self.hierarchy)
+        for title in self.hierarchy :
+            for item in title["Items"] :
+                if isinstance(item["Media"], list) :
+                    for episode in item["Media"] :
+                        queue_fix(episode["Path"], episode["Playable"])
+                else :
+                    queue_fix(item["Media"], item["Playable"])
 
         # Start the fix tasks.
         if (fix_tasks) :
@@ -62,58 +64,93 @@ class FileManager (SL_CM) :
         return [int(text) if text.isdigit() else text.lower()
                 for text in re.split(r'(\d+)', s)]
 
-    def list_files (self, directory_path = "") :
-        # List all files within a passed directory path.
+    def list_files (self, directory_path = "", _depth = 0) :
+        # Build the classified media library directly while walking the disk.
+        #
+        # depth 0 (the media root): each sub-folder is a category (e.g. "Movies") -
+        #                           its titles are flattened straight into the result.
+        # depth 1 (a category)    : each sub-folder is a title, classified as
+        #                           "Movie" or "Series" purely by how many Items
+        #                           it resolves to. A single file, or a set of
+        #                           sub-folders that resolve to exactly one Item,
+        #                           is a "Movie". Everything else is a "Series" -
+        #                           its Items are either standalone films (Media
+        #                           is a path) or seasons (Media is an episode list).
 
-        # Turn a relative path into a safe absolute path. 
+        # Turn a relative path into a safe absolute path.
         # Refuses any path that tries to escape the media directory.
-        target_dir = os.path.abspath(
-            os.path.join(self.media_dir, directory_path)
-            )
-        if not (
-            target_dir == self.media_dir or 
-            target_dir.startswith(self.media_dir + os.sep)
-            ) :
+        target_dir = os.path.abspath(os.path.join(self.media_dir, directory_path))
+        if not (target_dir == self.media_dir or target_dir.startswith(self.media_dir + os.sep)) :
             raise ValueError (f"Passed path escapes media directory: {directory_path}")
-        
-        entries = []
-        directory_listing = sorted(os.listdir(target_dir), key=self.natural_sort_key)
-        icon_file = self._find_file_icon(directory_listing, directory_path)
 
-        for entry in directory_listing:
+        listing = sorted((e for e in os.listdir(target_dir) if not e.startswith(".")), key = self.natural_sort_key)
+        dirs    = [e for e in listing if os.path.isdir(os.path.join(target_dir, e))]
 
-            # Skip over any hidden files.
-            if entry.startswith(".") :
+        if (_depth == 0) :
+            titles = []
+            for category in dirs :
+                titles += self.list_files(os.path.join(directory_path, category), 1)
+            return titles
+
+        strip = lambda name : re.sub(r'^\d+\s+', '', name)
+        titles = []
+
+        for title in dirs :
+            title_path, title_dir = os.path.join(directory_path, title), os.path.join(target_dir, title)
+            title_listing = sorted((e for e in os.listdir(title_dir) if not e.startswith(".")), key = self.natural_sort_key)
+            title_dirs    = [e for e in title_listing if os.path.isdir(os.path.join(title_dir, e))]
+            title_files   = [e for e in title_listing if e.lower().endswith(self.valid_files)]
+
+            # A file directly inside the title folder, no sub-folders: a standalone movie.
+            if (title_files and not title_dirs) :
+                icon = self._find_file_icon(title_listing, title_path)
+                items = [self._movie_item(title, icon, title_path, title_dir, title_files[0])]
+                titles.append({"Type" : "Movie", "Name" : strip(title), "Items" : items})
                 continue
 
-            full_path  = os.path.join(target_dir, entry)
-            entry_path = os.path.join(directory_path, entry)
+            # Sub-folders: each is either a single film (-> one Item with a
+            # path in Media) or a season of episode files (-> one Item whose
+            # Media is the list of episodes).
+            items = []
+            for season_num, sub in enumerate(title_dirs, start = 1) :
+                sub_path, sub_dir = os.path.join(title_path, sub), os.path.join(title_dir, sub)
+                sub_listing = sorted((e for e in os.listdir(sub_dir) if not e.startswith(".")), key = self.natural_sort_key)
+                sub_files   = [e for e in sub_listing if e.lower().endswith(self.valid_files)]
+                if not sub_files :
+                    continue
 
-            Info = None
+                icon = self._find_file_icon(sub_listing, sub_path)
 
-            if (os.path.isdir(full_path)) :
-                Info = {
-                    "Type"     : "Directory",
-                    "Children" : self.list_files(entry_path)
-                }
-                
-            elif (entry.lower().endswith(self.valid_files)) :
-                Info = {
-                    "Type"     : "File",
-                    "Playable" : self.is_file_playable(full_path),
-                    "Icon"     : icon_file
-                }
+                if (len(sub_files) == 1) :
+                    items.append(self._movie_item(sub, icon, sub_path, sub_dir, sub_files[0]))
+                else :
+                    items.append({
+                        "Name" : strip(sub),
+                        "Icon" : icon,
+                        "Media" : [
+                            {
+                                "Name"     : f"S{season_num:02d}E{ep_num:02d}",
+                                "Path"     : os.path.join(sub_path, f),
+                                "Playable" : self.is_file_playable(os.path.join(sub_dir, f))
+                            }
+                            for ep_num, f in enumerate(sub_files, start = 1)
+                        ]
+                    })
 
-            if (Info) : 
-                entries.append(
-                    {
-                        "Name"     : entry,
-                        "Info"     : Info,
-                        "Path"     : entry_path
-                    }
-                )
+            # A title of exactly one item is a movie, whatever produced it -
+            # a lone sub-folder, or a franchise/series that only ever had one entry.
+            kind = "Movie" if len(items) == 1 else "Series"
+            titles.append({"Type" : kind, "Name" : strip(title), "Items" : items})
 
-        return entries
+        return titles
+
+    def _movie_item (self, name, icon, entry_path, entry_dir, filename) :
+        return {
+            "Name"     : re.sub(r'^\d+\s+', '', name),
+            "Icon"     : icon,
+            "Media"    : os.path.join(entry_path, filename),
+            "Playable" : self.is_file_playable(os.path.join(entry_dir, filename))
+        }
     
     def _find_file_icon (self, directory_listing, directory_path) :
         # Attempt to find a file named "icon" alongside the media file.

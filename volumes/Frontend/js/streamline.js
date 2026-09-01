@@ -1,6 +1,4 @@
-import { media_container } from "./handler.js"
-
-console.log("Streamline.js loaded!");
+console.log('Loaded index.js!');
 
 const host = "http://streamline.local:8080"
 
@@ -9,32 +7,75 @@ async function get_route(route) {
   return await response.json()
 }
 
-function attach_behaviors() {
-    document.querySelectorAll('media_group').forEach(media_group => {
-    media_group.addEventListener('wheel', (e) => {
-        if (e.target.closest('episodes')) return;
+function attach_behaviors () {
+    // Enable horizontal scrolling for the series groups.
+    document.querySelectorAll('series').forEach(media_group => {
+        media_group.addEventListener('wheel', (e) => {
+            if (e.target.closest('episode')) return;
+            const overflowing = media_group.scrollWidth > media_group.clientWidth;
+            if (overflowing && e.deltaY !== 0) {
+            e.preventDefault();
+            media_group.scrollLeft += e.deltaY;
+            }
+        });
+    });
+}
 
-        const overflowing = media_group.scrollWidth > media_group.clientWidth;
+// Base class for creating a media object.
+class media {
+    constructor (data, parent) {
 
-        if (overflowing && e.deltaY !== 0) {
-        e.preventDefault();
-        media_group.scrollLeft += e.deltaY;
+        console.log(data);
+        
+        this.icon = data.Icon;
+        this.media = data.Media;
+        this.name = data.Name;
+
+        this.media = document.createElement("media");
+
+        this.media_card = document.createElement("media_card");
+        this.play_media = document.createElement("play_media");
+
+        // Populate play media element.
+        if (Array.isArray(this.media)) {
+            // If the media is an array then generate the episode list.
+            this.play_media.innerHTML = `<series_title class="title_text">${this.name}</series_title>`;
+            for (const episode of this.media) {
+                const ep_element = document.createElement("episode");
+                ep_element.setAttribute("class", "title_text");
+                ep_element.innerText = episode.Name;
+                ep_element.value = episode.Path;
+
+                this.play_media.appendChild(ep_element);
+            }
+        } else {
+            // If its not an array add the play svg.
+            this.play_media.innerHTML = "<img src='./image/play.svg'>"
         }
-        // If not overflowing, do nothing — let the event bubble/scroll normally.
-    });
-    });
+        
+        this.media_img  = document.createElement("img");
+        this.media_img.setAttribute("src", `${host}/mnt/${this.icon}`);
 
-  document.querySelectorAll('media_content').forEach(content_element => {
-    content_element.addEventListener('click', (e) => e.stopPropagation());
-  });
+        // Append everything together.
+        this.media_card.appendChild(this.play_media);
+        this.media_card.appendChild(this.media_img);
+        this.media.appendChild(this.media_card);
 
-  document.querySelectorAll('media').forEach(media_element => {
-    media_element.addEventListener('click', () => {
-      const wasExpanded = media_element.classList.contains('expanded');
-      document.querySelectorAll('media.expanded').forEach(el => el.classList.remove('expanded'));
-      if (!wasExpanded) media_element.classList.add('expanded');
-    });
-  });
+        parent.appendChild(this.media);
+    }
+}
+
+class series {
+    constructor (data, parent) {
+        this.series = document.createElement("series");
+        this.series.setAttribute("class", "series");
+
+        for (const entry of data.Items) {
+            new media(entry, this.series);
+        }
+
+        parent.appendChild(this.series);
+    }
 }
 
 async function streamline () {
@@ -56,13 +97,26 @@ async function streamline () {
         selector.appendChild(option);
     }
 
-    for (const root of files) {
-        for (const group of root.Info.Children) {
-            new media_container(group, host);
+    console.log(files);
+
+    for (const file of files) {
+        switch (file.Type) {
+            case "Series" : {
+                parent = document.getElementById("Series");
+                new series(file, parent);
+                break;
+            }
+            case "Movie" : {
+                parent = document.getElementById("Movie");
+                new media(file.Items[0], parent);
+                break;
+            }
         }
     }
 
     attach_behaviors();
 }
 
-streamline();
+window.addEventListener("load", async () => {
+    streamline();
+});
