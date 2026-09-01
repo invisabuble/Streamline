@@ -12,10 +12,25 @@ function attach_behaviors () {
     document.querySelectorAll('series').forEach(media_group => {
         media_group.addEventListener('wheel', (e) => {
             if (e.target.closest('episode')) return;
+
             const overflowing = media_group.scrollWidth > media_group.clientWidth;
-            if (overflowing && e.deltaY !== 0) {
-            e.preventDefault();
-            media_group.scrollLeft += e.deltaY;
+
+            if (!overflowing || e.deltaY === 0) return;
+
+            const atLeft = media_group.scrollLeft <= 0;
+            const atRight =
+                media_group.scrollLeft + media_group.clientWidth >= media_group.scrollWidth;
+
+            // Scrolling down/right
+            if (e.deltaY > 0 && !atRight) {
+                e.preventDefault();
+                media_group.scrollLeft += e.deltaY;
+            }
+
+            // Scrolling up/left
+            else if (e.deltaY < 0 && !atLeft) {
+                e.preventDefault();
+                media_group.scrollLeft += e.deltaY;
             }
         });
     });
@@ -24,14 +39,14 @@ function attach_behaviors () {
 // Base class for creating a media object.
 class media {
     constructor (data, parent) {
-
-        console.log(data);
         
         this.icon = data.Icon;
         this.media = data.Media;
         this.name = data.Name;
 
-        this.media = document.createElement("media");
+        console.log(this.media);
+
+        this.media_element = document.createElement("media");
 
         this.media_card = document.createElement("media_card");
         this.play_media = document.createElement("play_media");
@@ -39,18 +54,25 @@ class media {
         // Populate play media element.
         if (Array.isArray(this.media)) {
             // If the media is an array then generate the episode list.
+            this.play_media.setAttribute("class", "series");
             this.play_media.innerHTML = `<series_title class="title_text">${this.name}</series_title>`;
             for (const episode of this.media) {
                 const ep_element = document.createElement("episode");
                 ep_element.setAttribute("class", "title_text");
                 ep_element.innerText = episode.Name;
-                ep_element.value = episode.Path;
+
+                ep_element.addEventListener("click", (e) => {
+                    this.play_media_file(episode.Path, episode.Name);
+                });
 
                 this.play_media.appendChild(ep_element);
             }
         } else {
             // If its not an array add the play svg.
             this.play_media.innerHTML = "<img src='./image/play.svg'>"
+            this.play_media.addEventListener("click", (e) => {
+                this.play_media_file(this.media, this.name);
+            });
         }
         
         this.media_img  = document.createElement("img");
@@ -59,10 +81,36 @@ class media {
         // Append everything together.
         this.media_card.appendChild(this.play_media);
         this.media_card.appendChild(this.media_img);
-        this.media.appendChild(this.media_card);
+        this.media_element.appendChild(this.media_card);
 
-        parent.appendChild(this.media);
+        parent.appendChild(this.media_element);
     }
+
+    async play_media_file (media_path, name = "") {
+
+        const device = document.getElementById("selector").value;
+        if (device == "No AV Devices Found") {
+            console.log(device);
+            return;
+        }
+
+        let media_title = `${this.name} : ${name}`;
+
+        const params = new URLSearchParams({
+            file  : media_path,
+            device: device,
+            title : media_title
+        });
+
+        const route = `${host}/api/set_target?${params.toString()}`;
+        const play_ = `${host}/api/play_target?device=${device}&speed=1`;
+        
+        //await fetch(route);
+        //await fetch(play_);
+
+        console.log(route);
+    }
+    
 }
 
 class series {
